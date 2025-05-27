@@ -1,124 +1,59 @@
-from Bio import Entrez, SeqIO
-from io import StringIO
+from Bio import Entrez as E, SeqIO as S
+from io import StringIO as T
 import csv
-import matplotlib.pyplot as plt
-
-class NCBIRetriever:
-    def __init__(self, email, api_key):
-        Entrez.email = email
-        Entrez.api_key = api_key
-        Entrez.tool = 'BioScriptEx10'
-    def search_taxid(self, taxid, min_len=None, max_len=None):
-        print(f"Searching for records with taxID: {taxid}")
-        try:
-            handle = Entrez.efetch(db="taxonomy", id=taxid, retmode="xml")
-            records = Entrez.read(handle)
-            organism_name = records[0]["ScientificName"]
-            print(f"Organism: {organism_name} (TaxID: {taxid})")
-
-            search_term = f"txid{taxid}[Organism] AND {min_len if min_len is not None else 0}:{max_len if max_len is not None else 10000000000000}[SLEN]"
-
-            handle = Entrez.esearch(db="nucleotide", term=search_term, usehistory="y")
-            search_results = Entrez.read(handle)
-            count = int(search_results["Count"])
-
-            if count == 0:
-                print("No records found matching the criteria")
-                return None
-
-            print(f"Found {count} records")
-
-            self.webenv = search_results["WebEnv"]
-            self.query_key = search_results["QueryKey"]
-
-            return count
-
-        except Exception as e:
-            print(f"Error searching TaxID {taxid}: {e}")
-            return None
-
-    def fetch_records(self, start=0, max_records=10):
-        try:
-            raw_text = Entrez.efetch(
-                db="nucleotide",
-                rettype="gb",
-                retmode="text",
-                retstart=start,
-                retmax=max_records,
-                webenv=self.webenv,
-                query_key=self.query_key
-            ).read()
-            records = list(SeqIO.parse(StringIO(raw_text), "genbank"))
-            return raw_text, records
-        except Exception as e:
-            print(f"Error fetching records: {e}")
-            return "", []
-
-def generate_csv_report(records, filename):
-    with open(filename, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        for record in records:
-            writer.writerow([record.annotations.get('accessions', [''])[0], len(record.seq), record.description])
-
-def plot_sequence_lengths(records, filename):
-    if not records:
-        print("No records to plot")
-        return
-
-    sorted_records = sorted(records, key=lambda x: len(x.seq))
-    accessions = [rec.annotations.get('accessions', [''])[0] for rec in sorted_records]
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(range(len(accessions)), [len(rec.seq) for rec in sorted_records], marker='o', linestyle='-', color='b')
-    plt.xticks(range(len(accessions)), accessions, rotation=45, ha='right')
-    plt.ylabel('Sequence Length')
-    plt.title('Sequence Length Distribution')
-    plt.savefig(filename)
-    plt.close()
-
-def get_filters():
-    min_len = None
-    max_len = None
+import matplotlib.pyplot as P
+G=input
+N=None
+O=open
+R=range
+L=len
+X=Exception
+I=int
+Q=exit
+PR=print
+TX="taxid"
+AC="accessions"
+SL="Sequence Length"
+NC="nucleotide"
+LN=" len [optional]: "
+if __name__=="__main__":
+    E.email=G("email:")
+    E.api_key=G("API key:")
+    E.tool='BioScriptEx10'
+    t=G(f"Enter {TX}:").strip()
     try:
-        min_input = input("Minimum sequence length [optional]: ").strip()
-        max_input = input("Maximum sequence length [optional]: ").strip()
-        min_len = int(min_input) if min_input else None
-        max_len = int(max_input) if max_input else None
-        if min_len and max_len and min_len > max_len:
-            min_len, max_len = max_len, min_len
-    except ValueError:
-        print("Invalid filter")
-    return min_len, max_len
-
-def main():
-    email = input("Enter your NCBI email: ")
-    api_key = input("Enter your NCBI API key: ")
-
-    retriever = NCBIRetriever(email, api_key)
-
-    taxid = input("Enter taxonomic ID: ").strip()
-
-    min_len, max_len = get_filters()
-
-    count = retriever.search_taxid(taxid, min_len, max_len)
-
-    raw_text, records = retriever.fetch_records(max_records=min(count, 500))
-    if not records:
-        print("No records fetched")
-        return
-
-    output_gb = f"taxid_{taxid}_records.gb"
-    with open(output_gb, 'w') as f:
-        f.write(raw_text)
-    print(f"Saved {len(records)} records to {output_gb}")
-
-    csv_file = f"taxid_{taxid}_report.csv"
-    generate_csv_report(records, csv_file)
-    print(f"Generated CSV report: {csv_file}")
-
-    plot_file = f"taxid_{taxid}_lengths.png"
-    plot_sequence_lengths(records, plot_file)
-    print(f"Generated length plot: {plot_file}")
-
-if __name__ == "__main__":
-    main()
+        mni=G(f"Min{LN}").strip()
+        mxi=G(f"Max{LN}").strip()
+        mnl=I(mni) if mni else N
+        mxl=I(mxi) if mxi else N
+        if mnl and mxl and mnl>mxl:
+            mnl,mxl=mxl,mnl
+    except:
+        PR("Invalid filter");Q()
+    PR(f"Searching for records with {TX}: {t}")
+    on=E.read(E.efetch(db="taxonomy",id=t,retmode="xml"))[0]["ScientificName"]
+    PR(f"Organism: {on} ({TX}: {t})")
+    sr=E.read(E.esearch(db=NC,term=f"txid{t}[Organism] AND {mnl if mnl is not N else 0}:{mxl if mxl is not N else 1e12}[SLEN]",usehistory="y"))
+    c=I(sr["Count"])
+    if c==0:
+        PR("No records found matching the criteria")
+        Q()
+    PR(f"Found {c} records")
+    dt,bs = [],500
+    for s in R(0,c,bs):
+        dt.append(E.efetch(db=NC, rettype="gb", retmode="text", retstart=s, retmax=min(bs,c-s), webenv=sr["WebEnv"], query_key=sr["QueryKey"]).read())
+    rt = ''.join(dt)
+    rc = list(S.parse(T(rt), "genbank"))
+    with O(f"{TX}_{t}_records.gb", "w") as f:
+        f.write(rt)
+    with O(f"{TX}_{t}_report.csv", "w", newline='') as f:
+        csv.writer(f).writerows([[r.annotations.get(AC, [""])[0], L(r.seq), r.description] for r in rc])
+    sr=sorted(rc,key=lambda x: L(x.seq),reverse=True)
+    ac=[rec.annotations.get(AC,[''])[0] for rec in sr]
+    P.figure(figsize=(12, 6))
+    P.plot(R(L(ac)),[L(rec.seq) for rec in sr],marker='o',linestyle='-',color='b')
+    P.xticks(R(L(ac)),ac,rotation=45,ha='right')
+    P.ylabel(SL)
+    P.title(f'{SL} Dist')
+    P.savefig(f"{TX}_{t}_lengths.png")
+    P.close()
